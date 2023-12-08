@@ -1,29 +1,33 @@
 package main
 
 import (
+	"encoding/gob"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
 
-	"github.com/suhas-malhotra/bookings/pkg/config"
-	"github.com/suhas-malhotra/bookings/pkg/handlers"
-	"github.com/suhas-malhotra/bookings/pkg/render"
-
 	"github.com/alexedwards/scs/v2"
+	"github.com/suhas-malhotra/bookings/internal/config"
+	"github.com/suhas-malhotra/bookings/internal/handlers"
+	"github.com/suhas-malhotra/bookings/internal/models"
+	"github.com/suhas-malhotra/bookings/internal/render"
 )
 
 const portNumber = ":8080"
 
 var app config.AppConfig
-
 var session *scs.SessionManager
 
 // main is the main function
 func main() {
+	// what am I going to put in the session
+	gob.Register(models.Reservation{})
 
+	// change this to true when in production
 	app.InProduction = false
 
+	// set up the session
 	session = scs.New()
 	session.Lifetime = 24 * time.Hour
 	session.Cookie.Persist = true
@@ -45,15 +49,15 @@ func main() {
 
 	render.NewTemplates(&app)
 
-	// http.HandleFunc("/", handlers.Repo.Home)
-	// http.HandleFunc("/about", handlers.Repo.About)
-
 	fmt.Println(fmt.Sprintf("Staring application on port %s", portNumber))
-	server := &http.Server{
+
+	srv := &http.Server{
 		Addr:    portNumber,
 		Handler: routes(&app),
 	}
-	err = server.ListenAndServe()
-	log.Fatal(err)
-	// _ = http.ListenAndServe(portNumber, nil)
+
+	err = srv.ListenAndServe()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
